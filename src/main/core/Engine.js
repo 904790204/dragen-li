@@ -6,7 +6,7 @@ import { existsSync } from 'fs'
 import { resolve, join } from 'path'
 import logger from './Logger'
 import forever from 'forever-monitor'
-import { getI18n } from '@/ui/Locale'
+// import { getI18n } from '@/ui/Locale'
 import {
   getEngineBin,
   getSessionPath,
@@ -19,7 +19,7 @@ export default class Engine {
   constructor (options = {}) {
     this.options = options
 
-    this.i18n = getI18n()
+    // this.i18n = getI18n()
     this.systemConfig = options.systemConfig
     this.userConfig = options.userConfig
   }
@@ -34,14 +34,14 @@ export default class Engine {
 
     const binName = getEngineBin(platform)
     if (!binName) {
-      throw new Error(this.i18n.t('app.engine-damaged-message'))
+      throw new Error('app.engine-damaged-message')
     }
 
     let binPath = join(basePath, `/engine/${binName}`)
     const binIsExist = existsSync(binPath)
     if (!binIsExist) {
       logger.error('[Motrix] engine bin is not exist===>', binPath)
-      throw new Error(this.i18n.t('app.engine-missing-message'))
+      throw new Error('app.engine-missing-message')
     }
 
     let confPath = join(basePath, '/engine/aria2.conf')

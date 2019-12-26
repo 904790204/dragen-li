@@ -2,8 +2,8 @@ import { join } from 'path'
 import { EventEmitter } from 'events'
 import { app, shell, screen, BrowserWindow } from 'electron'
 import is from 'electron-is'
-import pageConfig from '../configs/page'
-import logger from '../core/Logger'
+import pageConfig from './configs/page'
+import logger from './core/Logger'
 import { debounce } from 'lodash'
 
 const defaultBrowserOptions = {

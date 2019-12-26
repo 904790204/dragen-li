@@ -2,7 +2,6 @@ import { EventEmitter } from 'events'
 import { app } from 'electron'
 import is from 'electron-is'
 
-import ExceptionHandler from './core/ExceptionHandler'
 import logger from './core/Logger'
 import Application from './Application'
 import {
@@ -48,8 +47,6 @@ export default class Launcher extends EventEmitter {
   }
 
   init () {
-    this.exceptionHandler = new ExceptionHandler()
-
     this.openedAtLogin = is.macOS()
       ? app.getLoginItemSettings().wasOpenedAtLogin
       : false

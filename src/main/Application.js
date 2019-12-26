@@ -6,17 +6,9 @@ import { extname, basename } from 'path'
 
 import logger from './core/Logger'
 import ConfigManager from './core/ConfigManager'
-import { setupLocaleManager } from '@/ui/Locale'
 import Engine from './core/Engine'
-import AutoLaunchManager from './core/AutoLaunchManager'
-import UpdateManager from './core/UpdateManager'
-import EnergyManager from './core/EnergyManager'
-import ProtocolManager from './core/ProtocolManager'
-import WindowManager from './ui/WindowManager'
-import MenuManager from './ui/MenuManager'
-import TouchBarManager from './ui/TouchBarManager'
-import TrayManager from './ui/TrayManager'
-import ThemeManager from './ui/ThemeManager'
+// 打开窗口
+import WindowManager from './WindowManager'
 import { AUTO_CHECK_UPDATE_INTERVAL } from '@shared/constants'
 
 export default class Application extends EventEmitter {
@@ -30,13 +22,6 @@ export default class Application extends EventEmitter {
     this.configManager = new ConfigManager()
 
     this.locale = this.configManager.getLocale()
-    this.localeManager = setupLocaleManager(this.locale)
-    this.i18n = this.localeManager.getI18n()
-
-    this.menuManager = new MenuManager()
-    this.menuManager.setup(this.locale)
-
-    this.initTouchBarManager()
 
     this.initWindowManager()
 
@@ -46,37 +31,15 @@ export default class Application extends EventEmitter {
     })
     this.startEngine()
 
-    this.trayManager = new TrayManager()
-
-    this.autoLaunchManager = new AutoLaunchManager()
-
-    this.initThemeManager()
-
-    this.energyManager = new EnergyManager()
-
-    this.initUpdaterManager()
-
-    this.initProtocolManager()
-
     this.handleCommands()
-
-    this.handleIpcMessages()
   }
 
   startEngine () {
     try {
       this.engine.start()
     } catch (err) {
-      const { message } = err
-      dialog.showMessageBox({
-        type: 'error',
-        title: this.i18n.t('app.system-error-title'),
-        message: this.i18n.t('app.system-error-message', { message })
-      }, () => {
-        setTimeout(() => {
-          app.quit()
-        }, 100)
-      })
+      console.log(err);
+      
     }
   }
 
@@ -124,9 +87,6 @@ export default class Application extends EventEmitter {
       this.isReady = true
       this.emit('ready')
     })
-    if (is.macOS()) {
-      this.touchBarManager.setup(page, win)
-    }
   }
 
   show (page = 'index') {
@@ -151,8 +111,6 @@ export default class Application extends EventEmitter {
 
   stop () {
     this.engine.stop()
-    this.energyManager.stopPowerSaveBlocker()
-    this.trayManager.destroy()
   }
 
   sendCommand (command, ...args) {
@@ -175,31 +133,6 @@ export default class Application extends EventEmitter {
   sendMessageToAll (channel, ...args) {
     this.windowManager.getWindowList().forEach(window => {
       this.windowManager.sendMessageTo(window, channel, ...args)
-    })
-  }
-
-  initThemeManager () {
-    this.themeManager = new ThemeManager()
-    this.themeManager.on('system-theme-changed', (theme) => {
-      this.trayManager.changeIconTheme(theme)
-      this.sendCommandToAll('application:system-theme', theme)
-    })
-  }
-
-  initTouchBarManager () {
-    if (!is.macOS()) {
-      return
-    }
-    this.touchBarManager = new TouchBarManager()
-  }
-
-  initProtocolManager () {
-    if (is.dev() || is.mas()) {
-      return
-    }
-    const protocols = this.configManager.getUserConfig('protocols', {})
-    this.protocolManager = new ProtocolManager({
-      protocols
     })
   }
 
@@ -236,17 +169,6 @@ export default class Application extends EventEmitter {
     })
   }
 
-  initUpdaterManager () {
-    if (is.mas()) {
-      return
-    }
-    this.updateManager = new UpdateManager({
-      autoCheck: this.isNeedAutoCheck(),
-      setCheckTime: this.configManager
-    })
-    this.handleUpdaterEvents()
-  }
-
   isNeedAutoCheck () {
     const enable = this.configManager.getUserConfig('auto-check-update')
     if (!enable) {
@@ -257,50 +179,10 @@ export default class Application extends EventEmitter {
     return (Date.now() - lastCheck > AUTO_CHECK_UPDATE_INTERVAL)
   }
 
-  handleUpdaterEvents () {
-    this.updateManager.on('checking', (event) => {
-      this.menuManager.updateMenuItemEnabledState('app.check-for-updates', false)
-      this.trayManager.updateMenuItemEnabledState('app.check-for-updates', false)
-    })
-
-    this.updateManager.on('download-progress', (event) => {
-      const win = this.windowManager.getWindow('index')
-      win.setProgressBar(event.percent / 100)
-    })
-
-    this.updateManager.on('update-not-available', (event) => {
-      this.menuManager.updateMenuItemEnabledState('app.check-for-updates', true)
-      this.trayManager.updateMenuItemEnabledState('app.check-for-updates', true)
-    })
-
-    this.updateManager.on('update-downloaded', (event) => {
-      this.menuManager.updateMenuItemEnabledState('app.check-for-updates', true)
-      this.trayManager.updateMenuItemEnabledState('app.check-for-updates', true)
-      const win = this.windowManager.getWindow('index')
-      win.setProgressBar(0)
-    })
-
-    this.updateManager.on('will-updated', (event) => {
-      this.windowManager.setWillQuit(true)
-    })
-
-    this.updateManager.on('update-error', (event) => {
-      this.menuManager.updateMenuItemEnabledState('app.check-for-updates', true)
-      this.trayManager.updateMenuItemEnabledState('app.check-for-updates', true)
-    })
-  }
-
   relaunch (page = 'index') {
     this.stop()
     app.relaunch()
     app.exit()
-    // this.closePage(page)
-    // if (page === 'index') {
-    //   this.engine.restart()
-    // }
-    // setTimeout(() => {
-    //   this.showPage(page)
-    // }, 500)
   }
 
   handleCommands () {
@@ -318,12 +200,6 @@ export default class Application extends EventEmitter {
       if (is.linux()) {
         return
       }
-
-      if (openAtLogin) {
-        this.autoLaunchManager.enable()
-      } else {
-        this.autoLaunchManager.disable()
-      }
     })
 
     this.on('application:show', (page) => {
@@ -339,22 +215,9 @@ export default class Application extends EventEmitter {
       this.relaunch()
     })
 
-    this.on('application:check-for-updates', () => {
-      this.updateManager.check()
-    })
-
     this.on('application:change-theme', (theme) => {
       this.themeManager.updateAppAppearance(theme)
       this.sendCommandToAll('application:theme', theme)
-    })
-
-    this.on('application:change-locale', (locale) => {
-      logger.info('[Motrix] application:change-locale===>', locale)
-      this.localeManager.changeLanguageByLocale(locale)
-        .then(() => {
-          this.menuManager.setup(locale)
-          this.trayManager.setup(locale)
-        })
     })
 
     this.on('application:open-file', (event) => {
@@ -384,8 +247,6 @@ export default class Application extends EventEmitter {
       if (is.dev() || is.mas()) {
         return
       }
-      console.log('this.protocolManager', protocols)
-      this.protocolManager.setup(protocols)
     })
 
     this.on('help:official-website', () => {
@@ -406,22 +267,6 @@ export default class Application extends EventEmitter {
     this.on('help:report-problem', () => {
       const url = 'https://motrix.app/report'
       shell.openExternal(url)
-    })
-  }
-
-  handleIpcMessages () {
-    ipcMain.on('command', (event, command, ...args) => {
-      logger.log('receive command', command, ...args)
-      this.emit(command, ...args)
-    })
-
-    ipcMain.on('update-menu-states', (event, visibleStates, enabledStates, checkedStates) => {
-      this.menuManager.updateMenuStates(visibleStates, enabledStates, checkedStates)
-      this.trayManager.updateMenuStates(visibleStates, enabledStates, checkedStates)
-    })
-
-    ipcMain.on('download-status-change', (event, status) => {
-      this.trayManager.updateStatus(status)
     })
   }
 }
