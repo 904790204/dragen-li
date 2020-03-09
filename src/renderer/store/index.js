@@ -1,7 +1,7 @@
 import {createStore,combineReducers} from 'redux'
-import api from './api'
+import task from './task'
 let reducer = combineReducers({
-  api
+  task
 })
 let store = createStore(reducer)
 export default store

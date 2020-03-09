@@ -1,8 +1,15 @@
 import aria2 from '../aria2/index'
 let initState = {
-
+  taskDefault: {
+    split: 16,
+    savePath: '/Users/zhaojin11/Downloads'
+  },
+  newTaskUrl: [],
+  newTaskSplit: 16,
+  newTaskRename: '',
+  newTaskSavePath: '/Users/zhaojin11/Downloads'
 }
-function api(state = initState,action){
+function task(state = initState,action){
   switch(action.type){
     case 'addTask':
       let params = [
@@ -12,10 +19,9 @@ function api(state = initState,action){
       .then((res) => {
         console.log(res);
       })
-      
       return state
     default:
       return state
   }
 }
-export default api
+export default task

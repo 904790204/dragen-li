@@ -6,7 +6,6 @@ import { existsSync } from 'fs'
 import { resolve, join } from 'path'
 import logger from './Logger'
 import forever from 'forever-monitor'
-// import { getI18n } from '@/ui/Locale'
 import {
   getEngineBin,
   getSessionPath,
@@ -18,8 +17,6 @@ export default class Engine {
 
   constructor (options = {}) {
     this.options = options
-
-    // this.i18n = getI18n()
     this.systemConfig = options.systemConfig
     this.userConfig = options.userConfig
   }

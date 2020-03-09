@@ -1,4 +1,5 @@
 import React from 'react'
+import AddView from './addView'
 
 class Task extends React.Component{
   constructor(){
@@ -8,7 +9,9 @@ class Task extends React.Component{
     }
   }
   render(){
-    return <div className="task-view">123</div>
+    return <div className="task-view">
+              <AddView></AddView>
+           </div>
   }
 }
 
